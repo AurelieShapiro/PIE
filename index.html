@@ -195,6 +195,14 @@
 				outFields: ["*"]
 			});
 
+			const restoration = new MapImageLayer({
+            			portalItem: {
+              				id: "000abd3315a14a4b9c7ea801a3069f1f"
+            			},
+            			title: "Restoration potential (+)",
+            			visible: false,
+            			outFields: ["*"]
+          		});
 
 			const ForestGain = new MapImageLayer({
 				portalItem: {
@@ -328,6 +336,7 @@
 				},
 				title: "WWF Priority Landscapes",
 				visible: false,
+				opacity: 0.65,
 				outFields: ["*"]
 			});
 
@@ -482,7 +491,7 @@
 				outFields: ["*"]
 			});
 
-      const IPLC = new FeatureLayer({
+      			const IPLC = new FeatureLayer({
 				portalItem: {
 					id: "d1b6082ba0ab4651a31a2253eeaf3a50"
 				},
@@ -507,6 +516,7 @@
 				layerId: 0,
 				title: "Overall Water Risk",
 				visible: false,
+				opacity: 0.65,
 				outFields: ["*"]
 			});
 
@@ -556,12 +566,12 @@
 					// autocasts as new PortalItem()
 					id: "436ed77686564bd68e205de4761540bf"
 				},
-				layers: [TCloss, WWFecos, carbon_opp, Countries, Fragmentation, FragmentationChange, IPLC,IUCNhabitat, AGB, GlobalForest, DeforestationFronts, HydroBasin, KBA, LiveFires, LPI, Mining, Hotspots, PopDensity, Roads, GlobalMangrove, IntactForest, ManagedForestConcessions, HumanFootprint, potential_carbon,WaterRisk, Reforestation, Fires, Terrai, Modification, WDPA, Heritage]
+				layers: [restoration,TCloss, WWFecos, carbon_opp, Countries, Fragmentation, FragmentationChange, IPLC,IUCNhabitat, AGB, GlobalForest, DeforestationFronts, HydroBasin, KBA, LiveFires, LPI, Mining, Hotspots, PopDensity, Roads, GlobalMangrove, IntactForest, ManagedForestConcessions, HumanFootprint, potential_carbon,WaterRisk, Reforestation, Fires, Terrai, Modification, WDPA, Heritage]
 			});
 
 			var impact_group = new GroupLayer({
 				title: "IMPACT POTENTIAL",
-				layers: [potential_carbon, carbon_opp]
+				layers: [potential_carbon, restoration,carbon_opp]
 			});
 
       var mon_group = new GroupLayer({
