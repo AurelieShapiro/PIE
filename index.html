@@ -1,0 +1,760 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>
+      Forest Forward
+    </title>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.16/esri/themes/light/main.css"
+    />
+	<link href="//db.onlinewebfonts.com/c/596b9b0742c4fb004a2adcaf9861a128?family=WWF" rel="stylesheet" type="text/css"/>
+    <script src="https://js.arcgis.com/4.16/"></script>
+
+    <style>
+		html,
+		body,
+		#viewDiv {
+			padding: 0;
+			margin: 0;
+			height: 100%;
+			width: 100%;
+		}
+
+		#logoutfield {
+			cursor: pointer;
+			padding: 10px;
+			background-color: white;
+			font-family: WWF, sans-serif;
+			font-size: 24px;
+			font-weight: 200;
+			position: absolute;
+			top: 0px;
+			right: 0px;
+		}
+
+		p {
+			margin: 10px;
+		}
+
+		#splash {
+			font-family: WWF, sans-serif;
+			font-weight: 500;
+			font-size: 2rem;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			text-align: center;
+			min-height: 100vh;
+		}
+
+		#loginbutton {
+			background-color: #44B687;
+			border: none;
+			color: white;
+			padding: 15px 32px;
+			text-align: center;
+			text-decoration: none;
+			display: inline-block;
+			font-size: 16px;
+			margin: 4px 2px;
+			cursor: pointer;
+		}
+
+		#loginbutton:active,
+		#loginbutton:focus {
+			outline-style: solid;
+			outline-color: green;
+			outline-width: thin;
+		}
+    </style>
+
+	<link
+	rel="stylesheet"
+	href="https://js.arcgis.com/4.16/esri/themes/light/main.css"
+	/>
+	<script src="https://js.arcgis.com/4.16/"></script>
+
+<script>
+	require(["esri/views/MapView", "esri/WebMap", "esri/widgets/LayerList", "esri/widgets/Legend", "esri/layers/MapImageLayer", "esri/layers/FeatureLayer", "esri/layers/ImageryLayer",
+		"esri/layers/TileLayer",
+		"esri/widgets/Search",
+		"esri/layers/GroupLayer",
+		"esri/widgets/Feature",
+		"esri/layers/support/Sublayer",
+		"esri/widgets/Expand",
+		"esri/widgets/Home",
+		"esri/layers/WMSLayer",
+		"esri/core/lang",
+		"esri/core/promiseUtils",
+		"esri/core/watchUtils",
+		"esri/portal/Portal",
+		"esri/identity/OAuthInfo",
+		"esri/identity/IdentityManager",
+		"esri/support/actions/ActionButton",
+		"esri/widgets/Expand",
+		"esri/Map",
+		"esri/views/SceneView"
+	], function(MapView, WebMap, LayerList, Legend, MapImageLayer, FeatureLayer, ImageryLayer, TileLayer, Search, GroupLayer, Feature, Sublayer, Expand, Home, WMSlayer, lang, promiseUtils, watchUtils, Portal, OAuthInfo, identityManager, actionButton, Expand, Map, SceneView) {
+
+		// ArcGIS Enterprise Portals are also supported
+		var portalUrl = "https://panda.maps.arcgis.com/sharing";
+
+		// subsitute your own client_id to identify who spawned the login and check for a matching redirect URI
+		var info = new OAuthInfo({
+			appId: "4pBNyZh5X14KCESX",
+			portalUrl: "https://panda.maps.arcgis.com",
+			popup: false // inline redirects don't require any additional app configuration
+		});
+		identityManager.registerOAuthInfos([info]);
+
+		document.getElementById('loginbutton').addEventListener("click", function() {
+			identityManager.getCredential(portalUrl);
+		});
+
+		document.getElementById('logoutfield').addEventListener("click", function() {
+			identityManager.destroyCredentials();
+			window.location.reload();
+		});
+
+		// persist logins when the page is refreshed
+		identityManager.checkSignInStatus(portalUrl).then(
+			function() {
+				document.getElementById('splash').style.display = 'none';
+				document.getElementById('viewDiv').style.display = '';
+
+				// display the map once the user is logged in
+				displayMap();
+			}
+		);
+
+		function displayMap() {
+        //web layers start hear
+
+      var Pop = new WMSlayer({
+				portalItem: {
+					id: "5e1c1a10f0b84465a7821851982ed305"
+				},
+				title: "Gridded Population of the World",
+				visible: false,
+				outFields: ["*"]
+			});
+
+      const instructionsExpand = new Expand({
+                expandIconClass: "esri-icon-question",
+                expandTooltip: "about this map",
+                view: view,
+                expanded: false,
+                content:
+                  "<div style='width:300px; padding:10px; background-color:white'><b>Welcome to Forests Forward</b><br> Click the eye icon to make layers or group visible or hidden. Arrows show which groups or layers can be expanded. The document takes you to the metadata of that layer. <br> For more information contact: <b>aurelie.shapiro@wwf.de</b> </div>"
+              });
+
+			const LiveFires = new FeatureLayer({
+				portalItem: {
+					id: "dece90af1a0242dcbf0ca36d30276aa3"
+				},
+				layerId: 0,
+				title: "Satellite Thermal Hotspots and Fire Activity",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const Mining = new FeatureLayer({
+				portalItem: {
+					id: "26a457ee3b584824bb930f2ec791b60d"
+				},
+				layerId: 0,
+				title: "Mining concession",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const PopDensity = new TileLayer({
+				portalItem: {
+					id: "90978c3a3a664c20b8da8fc21de6071b"
+				},
+				title: "Population Density 2015",
+				visible: false,
+				opacity: 0.95,
+				outFields: ["*"]
+			});
+
+			const Roads = new TileLayer({
+				portalItem: {
+					id: "89e3fa578173483aa677d28ee474acae"
+				},
+				layerId: 0,
+				title: "Roads",
+				visible: false,
+				outFields: ["*"]
+			});
+
+
+			const ForestGain = new MapImageLayer({
+				portalItem: {
+					id: "0d74054f76784810a302d889f6b43bc8"
+				},
+				layerId: 0,
+				title: "Forest Gain 2000-2012",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const HydroBasin = new MapImageLayer({
+				url: "https://wwf-sight-maps.org/arcgis/rest/services/Global/Hydrology/MapServer",
+				sublayers: [{
+					id: 5,
+					title: "Hydro Basins",
+					visible: true
+				}],
+				title: "Watersheds",
+				visible: false,
+				opacity: 0.5,
+				outFields: ["*"]
+			});
+
+			const AGB = new ImageryLayer({
+				url: "https://www.globildata.org/arcgis/rest/services/Forests/GEOCARBON_AGB/ImageServer",
+				visible: false,
+				title: "Above Ground Biomass"
+			});
+
+			const TCloss = new ImageryLayer({
+				url: "https://www.globildata.org/arcgis/rest/services/Forests/TreeCoverLoss/ImageServer",
+				visible: false,
+				title: "Annual Tree Cover Loss (2000-2019)"
+			});
+
+			const Vulnerability = new ImageryLayer({
+				url: "https://earthobs3.arcgis.com/arcgis/rest/services/Landcover_2050_Country/ImageServer",
+				visible: false,
+				title: "Vulnerability to land cover change (2050)"
+			});
+
+			const KBA = new MapImageLayer({
+				portalItem: {
+					id: "ee7743f6f17f4b0cba10ba68777995d0"
+				},
+				title: "Global KBAs 2020",
+				visible: false,
+				outFields: ["*"]
+			});
+
+      const IUCNhabitat = new MapImageLayer({
+				portalItem: {
+					id: "8e24865617ff4f3fbc0236e8243ec351"
+				},
+				title: "IUCN Habitat Classification (+)",
+				visible: false,
+				outFields: ["*"]
+			});
+
+       const carbon_opp = new MapImageLayer({
+				portalItem: {
+					id: "ab76fd78c134405eb2065b56633d5986"
+				},
+				title: "Carbon Opportunity Costs",
+				visible: false,
+				outFields: ["*"]
+			});
+      
+      const potential_carbon = new MapImageLayer({
+				portalItem: {
+					id: "32a16d25b98046ad95e13e21a7dcf995"
+				},
+				title: "Potential Carbon Sequestration",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			var LPI = new FeatureLayer({
+				portalItem: {
+					id: "8435445d4515478f995497b7093d06b9"
+				},
+				sublayers: [{
+					id: 0,
+					title: "LPI point locations",
+					visible: true
+				}],
+				title: "Living Planet Data Locations",
+				visible: false,
+				outFields: ["*"]
+			});
+			var simpleRendererLPI = null; // we have to fetch it when view is loaded
+			var heatmapRendererLPI = {
+				type: "heatmap",
+				colorStops: [
+					{ color: "rgba(63, 40, 102, 0)", ratio: 0.0 },
+					{ color: "#FFC200", ratio: 0.1 },
+					{ color: "#FFAC00", ratio: 0.2 },
+					{ color: "#FF9700", ratio: 0.3 },
+					{ color: "#FF8100", ratio: 0.4 },
+					{ color: "#FF6C00", ratio: 0.5 },
+					{ color: "#FF5600", ratio: 0.6 },
+					{ color: "#FF4100", ratio: 0.7 },
+					{ color: "#FF2B00", ratio: 0.8 },
+					{ color: "#FF1600", ratio: 0.9 },
+					{ color: "#FF0000", ratio: 1.0 }
+				],
+				blurRadius: 10,
+				maxPixelIntensity: 200,
+				minPixelIntensity: 0
+			};
+
+			const Heritage = new MapImageLayer({
+				portalItem: {
+					id: "ef1ecce8fa3e41d89688be6199b5b32c"
+				},
+				sublayers: [{
+					id: 0,
+					title: "World Heritage Sites",
+					visible: true
+				}],
+				title: "UNESCO World Heritage Sites",
+				visible: false,
+				opacity: 0.65,
+				outFields: ["*"]
+			});
+
+			const WWF = new MapImageLayer({
+				portalItem: {
+					id: "efbf4e670a0b494a87bd6a1bdb18d47b"
+				},
+				title: "WWF Priority Landscapes",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const GlobalMangrove = new MapImageLayer({
+				portalItem: {
+					id: "d52f8bd816fc488e8df1e2fce8c9165c"
+				},
+				layerId: 0,
+				title: "Global Mangroves (1996-2016)",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const IntactForest = new MapImageLayer({
+				portalItem: {
+					id: "76f92e84cd4b440ab6a2f6a427d6ede0"
+				},
+				title: "Intact Forest Landscapes",
+				visible: false,
+				outFields: ["*"]
+			});
+
+
+			const ManagedForestConcessions = new FeatureLayer({
+				portalItem: {
+					id: "33451575fd3e440db27952ea456abb46"
+				},
+				title: "Managed Forest Concessions",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const Reforestation = new MapImageLayer({
+				portalItem: {
+					id: "c529c9eb1df140859da92f560ef4bf70"
+				},
+				title: "Global Reforestation Potential",
+				visible: false,
+				outFields: ["*"]
+			});
+
+
+
+			const Fires = new MapImageLayer({
+				portalItem: {
+					id: "5d9c283c8e5344f194c34254e6f9c07a",
+				},
+				sublayers: [{
+					id: 0,
+					title: "Forest Fire Trends",
+					visible: true
+				}, {
+					id: 1,
+					title: "Forest Fire Hotspots",
+					visible: false
+				}, {
+					id: 3,
+					title: "Annual Burned Forest Area",
+					visible: true
+				}],
+				title: "Global Fires",
+				visible: false,
+				outFields: ["*"]
+			});
+
+
+			const Terrai = new MapImageLayer({
+				url: "https://www.globildata.org/arcgis/rest/services/Forests/Global_Forest_Analysis/MapServer",
+				sublayers: [{
+					id: 1,
+					title: "Deforestation Year",
+					visible: true
+				}],
+				title: "Annual Deforestation (tropics)",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const DeforestationFronts = new MapImageLayer({
+				url: "https://www.globildata.org/arcgis/rest/services/Forests/Deforestation_Trends_Hotspots_Fronts/MapServer",
+				sublayers: [{
+					id: 0,
+					title: "Deforestation Fronts",
+					visible: true
+				}],
+				title: "Deforestation Fronts",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const Fragmentation = new MapImageLayer({
+				url: "https://www.globildata.org/arcgis/rest/services/Forests/Global_Forest_Analysis/MapServer",
+				sublayers: [{
+					id: 3,
+					title: "Forest Fragmentation (2017)",
+					visible: true
+				}],
+				title: "Current Forest Fragmentation",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const FragmentationChange = new MapImageLayer({
+				url: "https://www.globildata.org/arcgis/rest/services/Forests/Global_Forest_Analysis/MapServer",
+				sublayers: [{
+					id: 2,
+					title: "Forest Fragmentation Change (2000-2017)",
+					visible: true
+				}],
+				title: "Current Forest Fragmentation",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const GlobalForest = new MapImageLayer({
+				url: "https://www.globildata.org/arcgis/rest/services/Forests/Global_Forest_Analysis/MapServer",
+				title: "Forest Cover",
+				sublayers: [{
+					id: 5,
+					title: "Global Forest 2017 (WWF)",
+					visible: true
+				}]
+			});
+
+			const Hotspots = new MapImageLayer({
+				url: "https://www.globildata.org/arcgis/rest/services/Forests/Deforestation_Trends_Hotspots_Fronts/MapServer",
+				sublayers: [{
+					id: 2,
+					title: "Hotspot Types",
+					visible: true
+				}],
+				title: "Deforestation Hotspots",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const Countries = new MapImageLayer({
+				portalItem: {
+					id: "1310fc96018d42b09e60d7d3e60c9eb8"
+				},
+				title: "Country Information",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const HumanFootprint = new MapImageLayer({
+				portalItem: {
+					id: "4c780bf0353d4c96baf90580d010b2e0"
+				},
+				title: "Human Footprint (LWPv2)",
+				visible: false,
+				outFields: ["*"]
+			});
+
+      const IPLC = new FeatureLayer({
+				portalItem: {
+					id: "d1b6082ba0ab4651a31a2253eeaf3a50"
+				},
+				title: "Indigenous Peoples Landscapes",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const Modification = new MapImageLayer({
+				portalItem: {
+					id: "4e2c6542110a4954be5491e1fa83f410"
+				},
+				title: "Human Modification",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const WaterRisk = new TileLayer({
+				portalItem: {
+					id: "a9ac62ace4e3473c94332f3beea34926"
+				},
+				layerId: 0,
+				title: "Overall Water Risk",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const CongoBasinHCV = new MapImageLayer({
+				portalItem: {
+					id: "36e363074a824e80ba7e011886cecc93"
+				},
+				title: "Congo Basin HCV Analysis",
+				visible: false,
+				outFields: ["*"]
+			});
+
+			const Miningclaims = new MapImageLayer({
+				portalItem: {
+					id: "e466d2f8c564408ba70f6cd54c8af1fd"
+				},
+				title: "Global Mining Claims",
+				visible: false,
+				outFields: ["*"]
+			});
+
+      const WWFecos = new MapImageLayer({
+				portalItem: {
+					id: "15ab413275674af9a5bf4a31cdcf1e82"
+				},
+				title: "WWF Priority Ecoregions",
+				visible: false,
+				outFields: ["*"]
+			});
+
+      const WDPA = new FeatureLayer({
+        portalItem: {
+          id: "ac901693664b44268b6ce193a78709da"
+        },
+        title: "World Database of Protected Areas (WDPA)",
+        visible: true,
+        opacity: 0.65,
+        outFields: ["*"]
+      });
+
+
+
+      //web layers end here
+
+			var webmap = new WebMap({
+				portalItem: {
+					// autocasts as new PortalItem()
+					id: "436ed77686564bd68e205de4761540bf"
+				},
+				layers: [TCloss, WWFecos, carbon_opp, Countries, Fragmentation, FragmentationChange, IPLC,IUCNhabitat, AGB, GlobalForest, DeforestationFronts, HydroBasin, KBA, LiveFires, LPI, Mining, Hotspots, PopDensity, Roads, GlobalMangrove, IntactForest, ManagedForestConcessions, HumanFootprint, potential_carbon,WaterRisk, Reforestation, Fires, Terrai, Modification, WDPA, Heritage]
+			});
+
+			var impact_group = new GroupLayer({
+				title: "IMPACT POTENTIAL",
+				layers: [potential_carbon, carbon_opp]
+			});
+
+      var mon_group = new GroupLayer({
+				title: "MONITORING",
+				layers: [FragmentationChange, TCloss, Countries, LiveFires]
+			});
+
+			var threat_group = new GroupLayer({
+				title: "THREAT",
+				layers: [Mining, PopDensity, Modification, Roads]
+			});
+
+			var cons_group = new GroupLayer({
+				title: "CONSERVATION",
+				layers: [HydroBasin, IUCNhabitat, AGB, GlobalForest, Fragmentation,GlobalMangrove, WWFecos,IntactForest,KBA, Heritage, LPI]
+			});
+
+			var response_group = new GroupLayer({
+				title: "RESPONSE",
+				layers: [Reforestation, IPLC, WWF, ManagedForestConcessions, WDPA]
+			});
+
+			var risk_group = new GroupLayer({
+				title: "RISK",
+				layers: [Fires, HumanFootprint, WaterRisk, Terrai, Hotspots, DeforestationFronts]
+			});
+
+			webmap.add(cons_group);
+			webmap.add(mon_group);
+			webmap.add(response_group);
+			webmap.add(threat_group);
+			webmap.add(risk_group);
+      webmap.add(impact_group);
+
+			var view = new SceneView({
+				map: webmap,
+				container: "viewDiv",
+				popup: {
+					autoOpenEnabled: true
+				}
+			});
+
+			const legendExpand = new Expand({
+				view: view,
+				expandTooltip: "Map Legend",
+				content: new Legend({
+					view: view
+				}),
+				expanded: view.widthBreakpoint !== "xsmall"
+			});
+			view.ui.add(legendExpand, "bottom-right");
+      view.ui.add(instructionsExpand, "bottom-left");
+
+			view.watch("widthBreakpoint", function(newValue) {
+				legendExpand.expanded = newValue !== "xsmall";
+			});
+
+			function getMetadata(layer) {
+				var foundPortalItemID = false;
+
+				if (layer != undefined) {
+					if (layer.portalItem != undefined) {
+						if (layer.portalItem.id != undefined) {
+							// for example https://www.arcgis.com/home/item.html?id=8435445d4515478f995497b7093d06b9
+							var metaurl = layer.portalItem.portal.url + "/home/item.html?id=" + layer.portalItem.id;
+							return metaurl;
+						}
+					}
+				}
+
+				// if not returns
+				if (layer.url != undefined) {
+					return layer.url;
+				}
+
+				return "";
+			}
+
+			// https://developers.arcgis.com/javascript/latest/sample-code/widgets-layerlist-actions/index.html
+			function defineActions(event) {
+				var item = event.item;
+
+				//if (event.item.title = "Current Forest Fragmentation")
+				//	console.log("event.item.title");
+
+				if (getMetadata(event.item.layer) == "")
+					return;
+
+				item.actionsSections = [[
+					{
+						title: "Show Metadata",
+						className: "esri-icon-documentation",
+						id: "open-metadata"
+					}
+				]];
+			}
+
+			function fadeVisibilityOn(layer) {
+				let animating = true;
+				let opacity = 0;
+				// fade layer's opacity from 0 to
+				// whichever value the user has configured
+				const finalOpacity = layer.opacity;
+				layer.opacity = opacity;
+
+				view.whenLayerView(layer).then(function(layerView) {
+					function incrementOpacityByFrame() {
+						if (opacity >= finalOpacity && animating) {
+							animating = false;
+							return;
+						}
+
+						layer.opacity = opacity;
+						opacity += 0.05;
+
+						requestAnimationFrame(incrementOpacityByFrame);
+					}
+
+					// Wait for tiles to finish loading before beginning the fade
+					watchUtils.whenFalseOnce(layerView, "updating", function(
+						updating
+					) {
+						requestAnimationFrame(incrementOpacityByFrame);
+					});
+				});
+			}
+
+			function changeRenderer(layer, highScaleRenderer, lowScaleRenderer, currentScale, checkScale = 72224) {
+				layer.renderer = currentScale <= checkScale ? highScaleRenderer : lowScaleRenderer;
+			}
+
+			view.when().then(function() {
+				var layerList = new LayerList({
+					view: view,
+					listItemCreatedFunction: defineActions
+				});
+
+				layerList.on("trigger-action", function(event) {
+					// Capture the action id.
+					var id = event.action.id;
+
+					if (id === "open-metadata") {
+						var metaurl = getMetadata(event.item.layer);
+						if (metaurl == "")
+							return;
+
+						//window.location.href = metaurl;
+						window.open(metaurl,'_blank');
+					}
+				});
+
+				// When the user toggles a layer on, transition
+				// the layer's visibility using opacity
+				layerList.operationalItems.forEach(function(item) {
+					item.watch("visible", function(visible) {
+						if (visible) {
+							fadeVisibilityOn(item.layer);
+						}
+					});
+				});
+
+				LPI.watch("visible", function(visible) {
+					changeRenderer(LPI, simpleRendererLPI, heatmapRendererLPI, view.scale, 72224);
+				});
+				LPI.when(function() {
+					simpleRendererLPI = LPI.renderer.clone();
+					changeRenderer(LPI, simpleRendererLPI, heatmapRendererLPI, view.scale, 72224);
+				});
+				view.watch("scale", function(newValue) {
+					changeRenderer(LPI, simpleRendererLPI, heatmapRendererLPI, newValue, 72224);
+				});
+
+				var homeBtn = new Home({
+					view: view
+				});
+
+				// Add the home button to the top left corner of the view
+				view.ui.add(homeBtn, "top-left");
+				view.ui.add(layerList, "top-left");
+			});
+		}
+	});
+</script>
+</head>
+	<body>
+		<div id="splash">
+			<p>Welcome to PIE - the potential impact estimator</p>
+			<p><img src="images\275px-WWF_Logo.svg.png" width="100px" alt="WWF Logo"></p>
+			<p>To continue please login</p>
+			<p><button id="loginbutton">Login</button></p>
+		</div>
+		<div id="viewDiv" style="display:none;">
+			<div id="logoutfield">Logout</div>
+		</div>
+	</body>
+</html>
